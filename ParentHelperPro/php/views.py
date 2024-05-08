@@ -36,12 +36,12 @@ class PostAPIView(APIView):
     def put(self, request, *args, **kwargs):
         pk = kwargs.get("pk", None)
         if not pk:
-            return Response({'error' "Method PUT not allowed"})
+            return Response({'error': "Method PUT not allowed"})
 
         try:
             instance = Post.oblects.get(pk=pk)
         except:
-            return Response({'erorr' "Objects does not exists"})
+            return Response({'erorr': "Objects does not exists"})
 
         serializer = PostSerializer(dara=request.data, instance=instance)
         serializer.is_valid(raise_exception=True)

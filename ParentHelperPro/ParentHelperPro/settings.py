@@ -24,7 +24,9 @@ SECRET_KEY = 'django-insecure-s@-62ygc3kfpou!xjq(c@#_qbc5bhi-h!3sauydub&tz6%qmc!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.0.16',
+                 '127.0.0.1',
+                 ]
 
 # Application definition
 
@@ -36,8 +38,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'php.apps.PhpConfig',
+    'corsheaders',
     'rest_framework',
 ]
+
+
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -47,6 +54,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'php.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'ParentHelperPro.urls'
@@ -95,6 +105,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+]
+
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:53045',
 ]
 
 # Internationalization
