@@ -6,8 +6,6 @@ from rest_framework.views import APIView
 
 from .models import User, Post
 from .serializers import UserSerializer, PostSerializer
-
-
 #class PostAPIView(generics.ListAPIView):
  #   queryset = Post.objects.all()
   #  serializer_class = PostSerializer;
