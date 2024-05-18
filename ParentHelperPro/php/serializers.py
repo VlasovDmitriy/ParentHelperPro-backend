@@ -7,6 +7,18 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'login', 'password', 'name', 'surname', 'icon')
 
+    def create(self, validated_data):
+        user = User.objects.create(
+            login=validated_data['login'],
+            password=validated_data['password'],
+            name=validated_data['name'],
+            surname=validated_data['surname'],
+            icon=validated_data['icon']
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
+
 
 class PostSerializer(serializers.ModelSerializer):
     tags = serializers.StringRelatedField(many=True, read_only=True)

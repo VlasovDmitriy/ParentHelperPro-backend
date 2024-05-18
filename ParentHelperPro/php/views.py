@@ -1,6 +1,6 @@
 from django.forms import model_to_dict
 from django.shortcuts import render
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -8,9 +8,14 @@ from .models import User, Post
 from .serializers import UserSerializer, PostSerializer
 
 
-#class PostAPIView(generics.ListAPIView):
- #   queryset = Post.objects.all()
-  #  serializer_class = PostSerializer;
+class RegisterAPIView(APIView):
+
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserAPIView(generics.ListAPIView):
@@ -29,7 +34,6 @@ class PostAPIView(APIView):
             title=request.data['title'],
             content=request.data['content'],
             tags=request.data['tags'],
-
         )
         return Response({'post': model_to_dict(post_new)})
 
@@ -47,6 +51,3 @@ class PostAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"post": serializer.data})
-
-
-
