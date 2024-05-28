@@ -7,17 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'password', 'first_name', 'last_name')
 
-    # def create(self, validated_data):
-    #     user = User.objects.create(
-    #         login=validated_data['login'],
-    #         password=validated_data['password'],
-    #         name=validated_data['name'],
-    #         surname=validated_data['surname'],
-    #         icon=validated_data['icon']
-    #     )
-    #     user.set_password(validated_data['password'])
-    #     user.save()
-    #     return user
+
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -45,7 +35,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('user', 'title', 'content', 'tags')
+        fields = ('id','user', 'title', 'content', 'tags')
 
     def create(self, validated_data):
         tags = validated_data.pop('tags')
