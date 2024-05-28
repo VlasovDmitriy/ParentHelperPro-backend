@@ -1,27 +1,25 @@
-from django.contrib.auth.base_user import AbstractBaseUser
+
+from django.contrib.auth.models import User
 from django.db import models
 
 
-class User(AbstractBaseUser):
-    id = models.AutoField(primary_key=True)
-    login = models.CharField(max_length=255)
-    password = models.CharField(max_length=255)
-    name = models.CharField(max_length=255)
-    surname = models.CharField(max_length=255)
-    icon = models.ImageField(upload_to='icons/')
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    followers = models.ManyToManyField(User, related_name='following', blank=True)
 
-    def __str__(self):
-        return self.name + " " + self.surname
+    def str(self):
+        return self.user.username
 
-
-class Admin(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    @property
+    def followers_count(self):
+        return self.followers.count()
 
 
 class Tags(models.Model):
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=20, db_index=True)
 
-    def __str__(self):
+    def str(self):
         return self.name
 
     class Meta:
@@ -29,11 +27,10 @@ class Tags(models.Model):
 
 
 class Post(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     title = models.CharField(max_length=255)
     content = models.TextField()
-    tags = models.ManyToManyField(Tags)
+    tags = models.ManyToManyField(Tags, related_name='posts')
 
-    def __str__(self):
+    def str(self):
         return self.title
-
