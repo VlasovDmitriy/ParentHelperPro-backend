@@ -1,6 +1,11 @@
 from rest_framework import generics, status, permissions
-from rest_framework.response import Response
+
 from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
+import jwt
+from django.conf import settings
 
 from .models import User, Post
 from .serializers import UserSerializer, PostSerializer, CustomUserCreateSerializer
@@ -58,3 +63,43 @@ class PostAPIView(APIView):
             serializer.save()
             return Response({"post": serializer.data})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DecodeTokenAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get('token')
+        try:
+            decoded_data = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = decoded_data.get('user_id')
+            user = User.objects.get(id=user_id)
+            return Response({'user': user.username, 'user_id': user_id, "first_name": user.first_name,
+                             "last_name": user.last_name, "email": user.email, "password": user.password,
+                             "admin": user.is_superuser, "posts": self.get_posts(user)})
+        except jwt.ExpiredSignatureError:
+            return Response({'error': 'Token has expired'}, status=401)
+        except jwt.InvalidTokenError:
+            return Response({'error': 'Invalid token'}, status=401)
+
+
+    def get_posts(self, user):
+
+        posts = Post.objects.filter(user=user)
+        serializer = PostSerializer(posts, many=True)
+        print(serializer)
+        return serializer.data
+
+
+
+
+
+
+
+
+
+
+
+
+
+

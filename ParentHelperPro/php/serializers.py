@@ -30,7 +30,7 @@ class UserSerializer(BaseUserSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    tags = serializers.PrimaryKeyRelatedField(many=True, queryset=Tags.objects.all())
+    tags = serializers.StringRelatedField(many=True)
 
     class Meta:
         model = Post
