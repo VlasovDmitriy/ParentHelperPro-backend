@@ -1,33 +1,32 @@
 from rest_framework import serializers
 from .models import User, Post, Tags, UserProfile
+from django.contrib.auth import get_user_model
+from djoser.serializers import UserCreateSerializer, UserSerializer as BaseUserSerializer
+
+User = get_user_model()
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
+class CustomUserCreateSerializer(UserCreateSerializer):
+    confirm_password = serializers.CharField(write_only=True)
+
+    class Meta(UserCreateSerializer.Meta):
         model = User
-        fields = ('id', 'username', 'password', 'first_name', 'last_name')
+        fields = ('id', 'email', 'username', 'password', 'confirm_password', 'first_name', 'last_name')
+
+    def validate(self, data):
+        if data['password'] != data.pop('confirm_password'):
+            raise serializers.ValidationError("Passwords do not match")
+        return data
+
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        return user
 
 
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    followers_count = serializers.ReadOnlyField()
-    followers = serializers.SerializerMethodField()
-    following_count = serializers.SerializerMethodField()
-    following = serializers.SerializerMethodField()
-
-    class Meta:
-        model = UserProfile
-        fields = ('avatar', 'followers_count', 'followers', 'following_count', 'following')
-
-    def get_following_count(self, obj):
-        return obj.user.following.count()
-
-    def get_following(self, obj):
-        return [profile.user.username for profile in obj.user.following.all()]
-
-    def get_followers(self, obj):
-        return [user.username for user in obj.followers.all()]
+class UserSerializer(BaseUserSerializer):
+    class Meta(BaseUserSerializer.Meta):
+        model = User
+        fields = ('id', 'username', 'first_name', 'last_name', 'email')
 
 
 class PostSerializer(serializers.ModelSerializer):

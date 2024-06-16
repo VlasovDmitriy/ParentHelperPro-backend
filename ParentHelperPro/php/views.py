@@ -1,31 +1,16 @@
-from django.forms import model_to_dict
-from django.shortcuts import render
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import User, Post, UserProfile
-from .serializers import UserSerializer, PostSerializer, UserProfileSerializer
-
-
-class UserProfileDetailView(generics.RetrieveAPIView):
-    queryset = UserProfile.objects.all()
-    serializer_class = UserProfileSerializer
-   # permission_classes = [permissions.AllowAny]
-
-
-class UserProfileUpdateView(generics.RetrieveUpdateAPIView):
-    serializer_class = UserProfileSerializer
-   # permission_classes = [permissions.IsAuthenticated]
-
-    def get_object(self):
-        return self.request.user.profile
+from .models import User, Post
+from .serializers import UserSerializer, PostSerializer, CustomUserCreateSerializer
 
 
 class RegisterAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
+        serializer = CustomUserCreateSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -35,19 +20,16 @@ class RegisterAPIView(APIView):
 class UserAPIView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class UserAPIDetail(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class PostAPIView(APIView):
-    queryset = Post.objects.all()
-    serializer_class = PostSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
 
     def get(self, request):
         posts = Post.objects.all()

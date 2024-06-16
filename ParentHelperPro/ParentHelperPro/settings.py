@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-s@-62ygc3kfpou!xjq(c@#_qbc5bhi-h!3sauydub&tz6%qmc!
 DEBUG = True
 
 
-ALLOWED_HOSTS = ['192.168.0.16',
+ALLOWED_HOSTS = ['192.168.0.122',
                  '127.0.0.1',
                  ]
 
@@ -192,4 +192,13 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
+}
+
+DJOSER = {
+    'USER_CREATE_PASSWORD_RETYPE': True,
+    'SEND_ACTIVATION_EMAIL': False,
+    'SERIALIZERS': {
+        'user_create': 'php.serializers.CustomUserCreateSerializer',
+        'user': 'php.serializers.UserSerializer',
+    },
 }
