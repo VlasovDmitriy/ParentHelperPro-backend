@@ -1,31 +1,21 @@
-from django.forms import model_to_dict
-from django.shortcuts import render
 from rest_framework import generics, status, permissions
-from rest_framework.response import Response
+
 from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
-from .models import User, Post, UserProfile
-from .serializers import UserSerializer, PostSerializer, UserProfileSerializer
+import jwt
+from django.conf import settings
 
-
-class UserProfileDetailView(generics.RetrieveAPIView):
-    queryset = UserProfile.objects.all()
-    serializer_class = UserProfileSerializer
-   # permission_classes = [permissions.AllowAny]
-
-
-class UserProfileUpdateView(generics.RetrieveUpdateAPIView):
-    serializer_class = UserProfileSerializer
-   # permission_classes = [permissions.IsAuthenticated]
-
-    def get_object(self):
-        return self.request.user.profile
+from .models import User, Post
+from .serializers import UserSerializer, PostSerializer, CustomUserCreateSerializer
 
 
 class RegisterAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
+        serializer = CustomUserCreateSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -35,19 +25,16 @@ class RegisterAPIView(APIView):
 class UserAPIView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class UserAPIDetail(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class PostAPIView(APIView):
-    queryset = Post.objects.all()
-    serializer_class = PostSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
 
     def get(self, request):
         posts = Post.objects.all()
@@ -76,3 +63,43 @@ class PostAPIView(APIView):
             serializer.save()
             return Response({"post": serializer.data})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DecodeTokenAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get('token')
+        try:
+            decoded_data = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = decoded_data.get('user_id')
+            user = User.objects.get(id=user_id)
+            return Response({'user': user.username, 'user_id': user_id, "first_name": user.first_name,
+                             "last_name": user.last_name, "email": user.email, "password": user.password,
+                             "admin": user.is_superuser, "posts": self.get_posts(user)})
+        except jwt.ExpiredSignatureError:
+            return Response({'error': 'Token has expired'}, status=401)
+        except jwt.InvalidTokenError:
+            return Response({'error': 'Invalid token'}, status=401)
+
+
+    def get_posts(self, user):
+
+        posts = Post.objects.filter(user=user)
+        serializer = PostSerializer(posts, many=True)
+        print(serializer)
+        return serializer.data
+
+
+
+
+
+
+
+
+
+
+
+
+
+

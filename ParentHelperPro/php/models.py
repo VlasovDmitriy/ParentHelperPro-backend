@@ -7,7 +7,7 @@ class UserProfile(models.Model):
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     followers = models.ManyToManyField(User, related_name='following', blank=True)
 
-    def str(self):
+    def __str__(self):
         return self.user.username
 
     @property
@@ -18,7 +18,7 @@ class UserProfile(models.Model):
 class Tags(models.Model):
     name = models.CharField(max_length=20, db_index=True)
 
-    def str(self):
+    def __str__(self):
         return self.name
 
     class Meta:
@@ -31,5 +31,5 @@ class Post(models.Model):
     content = models.TextField()
     tags = models.ManyToManyField(Tags, related_name='posts')
 
-    def str(self):
+    def __str__(self):
         return self.title
