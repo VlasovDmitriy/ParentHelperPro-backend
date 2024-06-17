@@ -1,12 +1,12 @@
 from rest_framework import serializers
-from .models import User, Post, Tags, UserProfile
+from .models import User, Post, UserProfile
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer as BaseUserSerializer
 
 User = get_user_model()
 
 
-class CustomUserCreateSerializer(UserCreateSerializer):
+class CustomUserCreateSerializer(BaseUserSerializer):
     confirm_password = serializers.CharField(write_only=True)
 
     class Meta(UserCreateSerializer.Meta):
@@ -21,12 +21,6 @@ class CustomUserCreateSerializer(UserCreateSerializer):
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
-
-
-class UserSerializer(BaseUserSerializer):
-    class Meta(BaseUserSerializer.Meta):
-        model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'email')
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -50,3 +44,16 @@ class PostSerializer(serializers.ModelSerializer):
         if tags is not None:
             instance.tags.set(tags)
         return instance
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = ['user', 'avatar']
+
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        avatar_url = obj.avatar.url
+        return request.build_absolute_uri(avatar_url)

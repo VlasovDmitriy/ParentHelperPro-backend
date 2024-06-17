@@ -7,8 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 import jwt
 from django.conf import settings
 
-from .models import User, Post
-from .serializers import UserSerializer, PostSerializer, CustomUserCreateSerializer
+from .models import User, Post, UserProfile
+from .serializers import PostSerializer, CustomUserCreateSerializer, UserProfileSerializer
 
 
 class RegisterAPIView(APIView):
@@ -16,21 +16,23 @@ class RegisterAPIView(APIView):
 
     def post(self, request):
         serializer = CustomUserCreateSerializer(data=request.data)
+
         if serializer.is_valid():
             serializer.save()
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserAPIView(generics.ListAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = CustomUserCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 
 class UserAPIDetail(generics.RetrieveAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = CustomUserCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 
@@ -74,9 +76,12 @@ class DecodeTokenAPIView(APIView):
             decoded_data = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             user_id = decoded_data.get('user_id')
             user = User.objects.get(id=user_id)
+            avatar = UserProfile.objects.get(user=user_id)
+
+            print(avatar)
             return Response({'user': user.username, 'user_id': user_id, "first_name": user.first_name,
                              "last_name": user.last_name, "email": user.email, "password": user.password,
-                             "admin": user.is_superuser, "posts": self.get_posts(user)})
+                             "admin": user.is_superuser, "posts": self.get_posts(user), "avatar": self.get_avatar(avatar)})
         except jwt.ExpiredSignatureError:
             return Response({'error': 'Token has expired'}, status=401)
         except jwt.InvalidTokenError:
@@ -89,6 +94,24 @@ class DecodeTokenAPIView(APIView):
         serializer = PostSerializer(posts, many=True)
         print(serializer)
         return serializer.data
+
+    def get_avatar(self, user_profile):
+        serializer = UserProfileSerializer(user_profile, context={'request': self.request})
+        return serializer.data['avatar']
+
+
+class UserProfileView(APIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, user):
+        profile = self.queryset.get(user=user)
+        serializer = UserProfileSerializer(profile)
+        return Response(serializer.data)
+
+
+
 
 
 

@@ -1,6 +1,9 @@
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
-from php.views import UserAPIView, PostAPIView, RegisterAPIView, DecodeTokenAPIView
+
+from ParentHelperPro import settings
+from php.views import UserAPIView, PostAPIView, RegisterAPIView, DecodeTokenAPIView, UserProfileView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -18,4 +21,5 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('get-user-id/', DecodeTokenAPIView.as_view(), name='get_user_id'),
-]
+    path('profile/', UserProfileView.as_view(), name='user-profile'),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
