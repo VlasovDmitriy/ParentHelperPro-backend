@@ -1,6 +1,6 @@
 from django.core.files.base import ContentFile
 from rest_framework import serializers
-from .models import User, Post, UserProfile
+from .models import User, Post, UserProfile, Tags
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer as BaseUserSerializer
 import requests
@@ -37,7 +37,7 @@ class CustomUserCreateSerializer(BaseUserSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    tags = serializers.StringRelatedField(many=True)
+    tags = serializers.SlugRelatedField(many=True, slug_field='name', queryset=Tags.objects.all())
 
     class Meta:
         model = Post
@@ -68,3 +68,5 @@ class UserProfileSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         avatar_url = obj.avatar.url
         return request.build_absolute_uri(avatar_url)
+
+

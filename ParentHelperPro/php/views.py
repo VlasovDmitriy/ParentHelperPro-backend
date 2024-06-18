@@ -7,11 +7,11 @@ from rest_framework.permissions import IsAuthenticated
 import jwt
 from django.conf import settings
 
+from .filter import PostFilter
 from .models import User, Post, UserProfile
 from .serializers import PostSerializer, CustomUserCreateSerializer, UserProfileSerializer
 from django.shortcuts import get_object_or_404
-import requests
-from django.core.files.base import ContentFile
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 
@@ -131,6 +131,27 @@ class UpdateAvatarAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PostListFilterView(generics.ListAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = PostFilter
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        tags = self.request.query_params.getlist('tags', None)
+        title = self.request.query_params.get('title', None)
+
+        if tags:
+            for tag in tags:
+                queryset = queryset.filter(tags__name=tag)
+
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+
+        return queryset
 
 
 
