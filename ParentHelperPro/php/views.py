@@ -9,6 +9,11 @@ from django.conf import settings
 
 from .models import User, Post, UserProfile
 from .serializers import PostSerializer, CustomUserCreateSerializer, UserProfileSerializer
+from django.shortcuts import get_object_or_404
+import requests
+from django.core.files.base import ContentFile
+
+
 
 
 class RegisterAPIView(APIView):
@@ -75,18 +80,23 @@ class DecodeTokenAPIView(APIView):
         try:
             decoded_data = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             user_id = decoded_data.get('user_id')
-            user = User.objects.get(id=user_id)
-            avatar = UserProfile.objects.get(user=user_id)
+            user = get_object_or_404(User, id=user_id)
+            user_profile = get_object_or_404(UserProfile, user=user)
 
-            print(avatar)
-            return Response({'user': user.username, 'user_id': user_id, "first_name": user.first_name,
-                             "last_name": user.last_name, "email": user.email, "password": user.password,
-                             "admin": user.is_superuser, "posts": self.get_posts(user), "avatar": self.get_avatar(avatar)})
+
+            return Response({'user': user.username,
+                             'user_id': user_id,
+                             "first_name": user.first_name,
+                             "last_name": user.last_name,
+                             "email": user.email,
+                             "password": user.password,
+                             "admin": user.is_superuser,
+                             "posts": self.get_posts(user),
+                             "avatar": self.get_avatar(user_profile)})
         except jwt.ExpiredSignatureError:
             return Response({'error': 'Token has expired'}, status=401)
         except jwt.InvalidTokenError:
             return Response({'error': 'Invalid token'}, status=401)
-
 
     def get_posts(self, user):
 
@@ -109,6 +119,26 @@ class UserProfileView(APIView):
         profile = self.queryset.get(user=user)
         serializer = UserProfileSerializer(profile)
         return Response(serializer.data)
+
+
+class UpdateAvatarAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        photo_url = request.data.get('photo_url')
+
+        if not photo_url:
+            return Response({'error': 'Photo URL is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        response = requests.get(photo_url)
+        if response.status_code == 200:
+            avatar_file = ContentFile(response.content)
+            avatar_file_name = f'avatars/{user.username}.jpg'
+            user.profile.avatar.save(avatar_file_name, avatar_file, save=True)
+            return Response({'status': 'Avatar updated successfully'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Failed to download the image'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 

@@ -3,7 +3,8 @@ from django.contrib import admin
 from django.urls import path, include
 
 from ParentHelperPro import settings
-from php.views import UserAPIView, PostAPIView, RegisterAPIView, DecodeTokenAPIView, UserProfileView
+from php.views import UserAPIView, PostAPIView, RegisterAPIView, DecodeTokenAPIView, UserProfileView, \
+    UpdateAvatarAPIView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -22,4 +23,5 @@ urlpatterns = [
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('get-user-id/', DecodeTokenAPIView.as_view(), name='get_user_id'),
     path('profile/', UserProfileView.as_view(), name='user-profile'),
+    path('update_avatar/<int:user_id>/', UpdateAvatarAPIView.as_view(), name='update_avatar'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

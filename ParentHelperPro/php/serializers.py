@@ -1,7 +1,9 @@
+from django.core.files.base import ContentFile
 from rest_framework import serializers
 from .models import User, Post, UserProfile
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer as BaseUserSerializer
+import requests
 
 User = get_user_model()
 
@@ -19,7 +21,20 @@ class CustomUserCreateSerializer(BaseUserSerializer):
         return data
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+        photo_url = validated_data.pop('photo_url', None)
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+        )
+        if photo_url:
+            response = requests.get(photo_url)
+            if response.status_code == 200:
+                avatar_file = ContentFile(response.content)
+                avatar_file_name = f'avatars/{user.username}.jpg'
+                user.profile.avatar.save(avatar_file_name, avatar_file, save=True)
         return user
 
 
