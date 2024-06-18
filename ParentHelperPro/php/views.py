@@ -9,7 +9,8 @@ from django.conf import settings
 
 from .filter import PostFilter
 from .models import User, Post, UserProfile
-from .serializers import PostSerializer, CustomUserCreateSerializer, UserProfileSerializer
+from .serializers import PostSerializer, CustomUserCreateSerializer, UserProfileSerializer, \
+    PasswordResetRequestSerializer, PasswordResetSerializer
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -151,6 +152,26 @@ class PostListFilterView(generics.ListAPIView):
             queryset = queryset.filter(title__icontains=title)
 
         return queryset
+
+
+class PasswordResetRequestView(APIView):
+    permission_classes = []
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"message": "Username and secret word validated. You can now reset your password."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PasswordResetView(APIView):
+    permission_classes = []
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password has been reset successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 

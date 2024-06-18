@@ -1,4 +1,4 @@
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 from .models import User, Post, UserProfile, Tags
@@ -73,5 +73,48 @@ class UserProfileSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         avatar_url = obj.avatar.url
         return request.build_absolute_uri(avatar_url)
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    secret_word = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        username = data.get('username')
+        secret_word = data.get('secret_word')
+
+        try:
+            user = User.objects.get(username=username)
+            profile = user.profile
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Invalid username or secret word.")
+
+        if not check_password(secret_word, profile.secret_word):
+            raise serializers.ValidationError("Invalid username or secret word.")
+
+        return data
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError("Passwords do not match.")
+        return data
+
+    def save(self):
+        username = self.validated_data['username']
+        new_password = self.validated_data['new_password']
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User does not exist.")
+
+        user.set_password(new_password)
+        user.save()
 
 

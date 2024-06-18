@@ -4,7 +4,7 @@ from django.urls import path, include
 
 from ParentHelperPro import settings
 from php.views import UserAPIView, PostAPIView, RegisterAPIView, DecodeTokenAPIView, UserProfileView, \
-    UpdateAvatarAPIView, PostListFilterView
+    UpdateAvatarAPIView, PostListFilterView, PasswordResetRequestView, PasswordResetView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -25,4 +25,7 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='user-profile'),
     path('update_avatar/', UpdateAvatarAPIView.as_view(), name='update_avatar'),
     path('posts/', PostListFilterView.as_view(), name='post-list'),
+
+    path('password_reset_request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
+    path('password_reset/', PasswordResetView.as_view(), name='password_reset'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
