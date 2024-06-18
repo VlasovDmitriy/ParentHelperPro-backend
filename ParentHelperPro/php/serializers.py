@@ -21,7 +21,7 @@ class CustomUserCreateSerializer(BaseUserSerializer):
         return data
 
     def create(self, validated_data):
-        photo_url = validated_data.pop('photo_url', None)
+
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -29,12 +29,10 @@ class CustomUserCreateSerializer(BaseUserSerializer):
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
         )
-        if photo_url:
-            response = requests.get(photo_url)
-            if response.status_code == 200:
-                avatar_file = ContentFile(response.content)
-                avatar_file_name = f'avatars/{user.username}.jpg'
-                user.profile.avatar.save(avatar_file_name, avatar_file, save=True)
+        default_avatar_path = 'media/avatars/default_avatar.jpg'
+        profile = user.profile
+        with open(default_avatar_path, 'rb') as avatar_file:
+            profile.avatar.save('default_avatar.jpg', ContentFile(avatar_file.read()), save=True)
         return user
 
 
@@ -62,11 +60,9 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    avatar = serializers.SerializerMethodField()
-
     class Meta:
         model = UserProfile
-        fields = ['user', 'avatar']
+        fields = ['avatar']
 
     def get_avatar(self, obj):
         request = self.context.get('request')

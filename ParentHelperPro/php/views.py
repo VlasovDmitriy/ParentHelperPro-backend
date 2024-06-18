@@ -124,21 +124,13 @@ class UserProfileView(APIView):
 class UpdateAvatarAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, user_id):
-        user = get_object_or_404(User, id=user_id)
-        photo_url = request.data.get('photo_url')
-
-        if not photo_url:
-            return Response({'error': 'Photo URL is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        response = requests.get(photo_url)
-        if response.status_code == 200:
-            avatar_file = ContentFile(response.content)
-            avatar_file_name = f'avatars/{user.username}.jpg'
-            user.profile.avatar.save(avatar_file_name, avatar_file, save=True)
-            return Response({'status': 'Avatar updated successfully'}, status=status.HTTP_200_OK)
-        else:
-            return Response({'error': 'Failed to download the image'}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request, *args, **kwargs):
+        user_profile = request.user.profile
+        serializer = UserProfileSerializer(user_profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 

@@ -23,5 +23,5 @@ urlpatterns = [
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('get-user-id/', DecodeTokenAPIView.as_view(), name='get_user_id'),
     path('profile/', UserProfileView.as_view(), name='user-profile'),
-    path('update_avatar/<int:user_id>/', UpdateAvatarAPIView.as_view(), name='update_avatar'),
+    path('update_avatar/', UpdateAvatarAPIView.as_view(), name='update_avatar'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
