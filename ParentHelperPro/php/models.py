@@ -8,6 +8,7 @@ from django_filters import rest_framework as filters
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    secret_word = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.user.username

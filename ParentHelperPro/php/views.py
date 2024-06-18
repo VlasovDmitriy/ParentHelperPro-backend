@@ -15,7 +15,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 
 
-
 class RegisterAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 

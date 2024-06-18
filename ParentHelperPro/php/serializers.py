@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 from .models import User, Post, UserProfile, Tags
@@ -10,10 +11,10 @@ User = get_user_model()
 
 class CustomUserCreateSerializer(BaseUserSerializer):
     confirm_password = serializers.CharField(write_only=True)
-
+    secret_word = serializers.CharField(write_only=True)
     class Meta(UserCreateSerializer.Meta):
         model = User
-        fields = ('id', 'email', 'username', 'password', 'confirm_password', 'first_name', 'last_name')
+        fields = ('id', 'email', 'username', 'password', 'confirm_password', 'first_name', 'last_name', 'secret_word')
 
     def validate(self, data):
         if data['password'] != data.pop('confirm_password'):
@@ -21,7 +22,8 @@ class CustomUserCreateSerializer(BaseUserSerializer):
         return data
 
     def create(self, validated_data):
-
+        secret_word = validated_data.pop('secret_word')
+        hashed_secret_word = make_password(secret_word)
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -29,10 +31,13 @@ class CustomUserCreateSerializer(BaseUserSerializer):
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
         )
+
         default_avatar_path = 'media/avatars/default_avatar.jpg'
         profile = user.profile
+        profile.secret_word = hashed_secret_word
         with open(default_avatar_path, 'rb') as avatar_file:
             profile.avatar.save('default_avatar.jpg', ContentFile(avatar_file.read()), save=True)
+        profile.save()
         return user
 
 
