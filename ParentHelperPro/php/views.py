@@ -10,10 +10,9 @@ from django.conf import settings
 from .filter import PostFilter
 from .models import User, Post, UserProfile
 from .serializers import PostSerializer, CustomUserCreateSerializer, UserProfileSerializer, \
-    PasswordResetRequestSerializer, PasswordResetSerializer
+    PasswordResetRequestSerializer, UpdateUserInfoSerializer
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-
 
 
 class RegisterAPIView(APIView):
@@ -160,17 +159,18 @@ class PasswordResetRequestView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
-            return Response({"message": "Username and secret word validated. You can now reset your password."}, status=status.HTTP_200_OK)
+            return Response({"message": "Логин и секретное слово подтверждены, можете вводить новый пароль"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class PasswordResetView(APIView):
-    permission_classes = []
 
-    def post(self, request, *args, **kwargs):
-        serializer = PasswordResetSerializer(data=request.data)
+class UpdateUserInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, *args, **kwargs):
+        serializer = UpdateUserInfoSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Password has been reset successfully."}, status=status.HTTP_200_OK)
+            serializer.update(request.user, serializer.validated_data)
+            return Response({"message": "Данные успешно обновлены"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
