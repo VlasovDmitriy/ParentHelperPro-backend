@@ -10,6 +10,7 @@ User = get_user_model()
 
 
 class CustomUserCreateSerializer(BaseUserSerializer):
+
     confirm_password = serializers.CharField(write_only=True)
     secret_word = serializers.CharField(write_only=True)
     class Meta(UserCreateSerializer.Meta):
@@ -18,7 +19,7 @@ class CustomUserCreateSerializer(BaseUserSerializer):
 
     def validate(self, data):
         if data['password'] != data.pop('confirm_password'):
-            raise serializers.ValidationError("Passwords do not match")
+            raise serializers.ValidationError("Пароли не совпадают")
         return data
 
     def create(self, validated_data):
@@ -87,10 +88,10 @@ class PasswordResetRequestSerializer(serializers.Serializer):
             user = User.objects.get(username=username)
             profile = user.profile
         except User.DoesNotExist:
-            raise serializers.ValidationError("Invalid username or secret word.")
+            raise serializers.ValidationError("Неправильный логин или пароль")
 
         if not check_password(secret_word, profile.secret_word):
-            raise serializers.ValidationError("Invalid username or secret word.")
+            raise serializers.ValidationError("Неправильный логин или пароль")
 
         return data
 
@@ -102,7 +103,7 @@ class PasswordResetSerializer(serializers.Serializer):
 
     def validate(self, data):
         if data['new_password'] != data['confirm_password']:
-            raise serializers.ValidationError("Passwords do not match.")
+            raise serializers.ValidationError("Пароли не совпадают")
         return data
 
     def save(self):
@@ -112,9 +113,43 @@ class PasswordResetSerializer(serializers.Serializer):
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
-            raise serializers.ValidationError("User does not exist.")
+            raise serializers.ValidationError("Пользователь с таким логином не найден")
 
         user.set_password(new_password)
         user.save()
 
 
+class UpdateUserInfoSerializer(serializers.ModelSerializer):
+    new_password = serializers.CharField(write_only=True, required=False)
+    confirm_password = serializers.CharField(write_only=True, required=False)
+    old_password = serializers.CharField(write_only=True, required=False)
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'old_password', 'new_password', 'confirm_password']
+
+    def validate(self, data):
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+        old_password = data.get('old_password')
+
+        if new_password or confirm_password:
+            if new_password != confirm_password:
+                raise serializers.ValidationError("Пароли не совпадают")
+            if not old_password:
+                raise serializers.ValidationError("Для установки нового пароля требуется старый пароль.")
+            if not self.context['request'].user.check_password(old_password):
+                raise serializers.ValidationError("Неверный старый пароль")
+
+        return data
+
+    def update(self, instance, validated_data):
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+
+        new_password = validated_data.get('new_password')
+        if new_password:
+            instance.set_password(new_password)
+
+        instance.save()
+        return instance
