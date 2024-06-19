@@ -1,10 +1,11 @@
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.auth.views import PasswordResetView
 from django.urls import path, include
 
 from ParentHelperPro import settings
 from php.views import UserAPIView, PostAPIView, RegisterAPIView, DecodeTokenAPIView, UserProfileView, \
-    UpdateAvatarAPIView, PostListFilterView, PasswordResetRequestView, PasswordResetView
+    UpdateAvatarAPIView, PostListFilterView, PasswordResetRequestView, UpdateUserInfoView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -28,4 +29,6 @@ urlpatterns = [
 
     path('password_reset_request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password_reset/', PasswordResetView.as_view(), name='password_reset'),
+
+    path('profile/update/', UpdateUserInfoView.as_view(), name='update-user'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
