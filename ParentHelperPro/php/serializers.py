@@ -132,7 +132,13 @@ class UpdateUserInfoSerializer(serializers.ModelSerializer):
         new_password = data.get('new_password')
         confirm_password = data.get('confirm_password')
         old_password = data.get('old_password')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
 
+        if first_name == "":
+            raise serializers.ValidationError("Имя не может быть пустой строкой.")
+        if last_name == "":
+            raise serializers.ValidationError("Фамилия не может быть пустой строкой.")
         if new_password or confirm_password:
             if new_password != confirm_password:
                 raise serializers.ValidationError("Пароли не совпадают")
@@ -144,8 +150,13 @@ class UpdateUserInfoSerializer(serializers.ModelSerializer):
         return data
 
     def update(self, instance, validated_data):
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
+        first_name = validated_data.get('first_name')
+        last_name = validated_data.get('last_name')
+
+        if first_name:
+            instance.first_name = first_name
+        if last_name:
+            instance.last_name = last_name
 
         new_password = validated_data.get('new_password')
         if new_password:
