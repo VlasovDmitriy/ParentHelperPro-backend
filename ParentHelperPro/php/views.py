@@ -116,6 +116,20 @@ class PostAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+    def delete(self, request, *args, **kwargs):
+        pk = kwargs.get("pk", None)
+        if not pk:
+            return Response({'error': "Method DELETE not allowed"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            post = Post.objects.get(pk=pk)
+        except Post.DoesNotExist:
+            return Response({'error': "Такого поста нет"}, status=status.HTTP_404_NOT_FOUND)
+
+        post.delete()
+        return Response({"message": "Пост успешно удалён"}, status=status.HTTP_200_OK)
+
+
 class DecodeTokenAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
