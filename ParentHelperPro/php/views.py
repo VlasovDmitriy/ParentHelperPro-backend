@@ -1,24 +1,68 @@
-
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics, status, permissions
+from rest_framework.authentication import SessionAuthentication
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 import jwt
 from django.conf import settings
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .filter import PostFilter
 from .models import User, Post, UserProfile
 from .serializers import PostSerializer, CustomUserCreateSerializer, UserProfileSerializer, \
-    PasswordResetRequestSerializer, UpdateUserInfoSerializer, UserProfileDetailSerializer
+    PasswordResetRequestSerializer, PasswordResetSerializer, UpdateUserInfoSerializer
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse, OpenApiParameter
 
 
 class RegisterAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        request=CustomUserCreateSerializer,
+        description="Метод для регистрации пользователей",
+        responses={
+            201: OpenApiResponse(
+                response=CustomUserCreateSerializer,
+                description="Успешно"
+            ),
+            400: OpenApiResponse(
+                response=CustomUserCreateSerializer,
+                examples=[
+                    OpenApiExample(
+                        'Validation Error',
+                        summary='Некорректный запрос',
+                        description='Некорректное тело запроса',
+                        value={
+                            "username": ["Это поле не может быть пустым"],
+                            "first_name": ["Это поле не может быть пустым"],
+                            "last_name": ["Это поле не может быть пустым"],
+                            "password": ["Это поле не может быть пустым"],
+                            "secret_word": ["Это поле не может быть пустым"]
+                        },
+                        status_codes=['400']
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
+                response=None,
+                examples=[
+                    OpenApiExample(
+                        'Server Error',
+                        summary='Пример внутренней ошибки сервера',
+                        description='Внутренняя ошибка сервера',
+                        value={"detail": "Internal server error"},
+                        status_codes=['500']
+                    )
+                ]
+            )
+        }
+    )
     def post(self, request):
         serializer = CustomUserCreateSerializer(data=request.data)
 
@@ -71,22 +115,10 @@ class PostAPIView(APIView):
             return Response({"post": serializer.data})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, *args, **kwargs):
-        pk = kwargs.get("pk", None)
-        if not pk:
-            return Response({'error': "Method DELETE not allowed"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            post = Post.objects.get(pk=pk)
-        except Post.DoesNotExist:
-            return Response({'error': "Такого поста нет"}, status=status.HTTP_404_NOT_FOUND)
-
-        post.delete()
-        return Response({"message": "Пост успешно удалён"}, status=status.HTTP_200_OK)
-
 
 class DecodeTokenAPIView(APIView):
     permission_classes = [IsAuthenticated]
+
 
     def post(self, request):
         token = request.data.get('token')
@@ -115,7 +147,6 @@ class DecodeTokenAPIView(APIView):
 
         posts = Post.objects.filter(user=user)
         serializer = PostSerializer(posts, many=True)
-        print(serializer)
         return serializer.data
 
     def get_avatar(self, user_profile):
@@ -169,11 +200,113 @@ class PostListFilterView(generics.ListAPIView):
 
 class PasswordResetRequestView(APIView):
     permission_classes = []
-
+    @extend_schema(
+        request=PasswordResetRequestSerializer,
+        description="Метод для проверки пользователя при восстановлении пароля",
+        responses={
+            200: OpenApiResponse(
+                response=PasswordResetRequestSerializer,
+                description="Успешно"
+            ),
+            400: OpenApiResponse(
+                response=PasswordResetRequestSerializer,
+                examples=[
+                    OpenApiExample(
+                        'Некорректный запрос',
+                        summary='Некорректный запрос',
+                        description='Некорректное тело запроса',
+                        value={
+                            "username": ["Это поле не может быть пустым"],
+                            "secret_word": ["Это поле не может быть пустым"]
+                        },
+                        status_codes=['400']
+                    ),
+                    OpenApiExample(
+                        'Validation Error',
+                        summary='Некорректный запрос',
+                        description='Некорректное тело запроса',
+                        value={
+                            "non_field_errors": ["Неверный логин или секретное слово"],
+                        },
+                        status_codes=['400']
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
+                response=None,
+                examples=[
+                    OpenApiExample(
+                        'Server Error',
+                        summary='Пример внутренней ошибки сервера',
+                        description='Внутренняя ошибка сервера',
+                        value={"detail": "Internal server error"},
+                        status_codes=['500']
+                    )
+                ]
+            )
+        }
+    )
     def post(self, request, *args, **kwargs):
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
-            return Response({"message": "Логин и секретное слово подтверждены, можете вводить новый пароль"}, status=status.HTTP_200_OK)
+            return Response({"message": "Username and secret word validated. You can now reset your password."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PasswordResetView(APIView):
+    permission_classes = []
+
+    @extend_schema(
+        request=PasswordResetSerializer,
+        description="Метод для восстановления пароля пользователя",
+        responses={
+            200: OpenApiResponse(
+                response=PasswordResetSerializer,
+                description="Успешно"
+            ),
+            400: OpenApiResponse(
+                response=PasswordResetSerializer,
+                examples=[
+                    OpenApiExample(
+                        'Некорректный запрос',
+                        summary='Некорректный запрос',
+                        description='Некорректное тело запроса',
+                        value={
+                            "username": ["Это поле не может быть пустым"],
+                            "new_password": ["Это поле не может быть пустым"],
+                            "confirm_password": ["Это поле не может быть пустым"]
+                        },
+                        status_codes=['400']
+                    ),
+                    OpenApiExample(
+                        'Validation Error',
+                        summary='Некорректный запрос',
+                        description='Некорректное тело запроса',
+                        value={
+                            "non_field_errors": ["Пароли не сходятся"],
+                        },
+                        status_codes=['400']
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
+                response=None,
+                examples=[
+                    OpenApiExample(
+                        'Server Error',
+                        summary='Пример внутренней ошибки сервера',
+                        description='Внутренняя ошибка сервера',
+                        value={"detail": "Internal server error"},
+                        status_codes=['500']
+                    )
+                ]
+            )
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password has been reset successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -215,6 +348,22 @@ class UserProfileByPostAPIView(APIView):
         except UserProfile.DoesNotExist:
             return Response({'error': 'Профиль пользователя не найден'}, status=status.HTTP_404_NOT_FOUND)
 
+
+class DeleteUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id, *args, **kwargs):
+
+        if not request.user.is_staff:
+            return Response({"detail": "You do not have permission to perform this action."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            user = User.objects.get(id=user_id)
+            user.delete()
+            return Response({"detail": "User deleted successfully."}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 

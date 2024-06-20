@@ -2,10 +2,12 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.views import PasswordResetView
 from django.urls import path, include
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from ParentHelperPro import settings
 from php.views import UserAPIView, PostAPIView, RegisterAPIView, DecodeTokenAPIView, UserProfileView, \
-    UpdateAvatarAPIView, PostListFilterView, PasswordResetRequestView, UpdateUserInfoView, UserProfileByPostAPIView
+    UpdateAvatarAPIView, PostListFilterView, PasswordResetRequestView, UpdateUserInfoView, UserProfileByPostAPIView,\
+    DeleteUserView
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -33,5 +35,10 @@ urlpatterns = [
 
     path('profile/update/', UpdateUserInfoView.as_view(), name='update-user'),
 
-    path('user/profile_by_post/<int:post_id>/', UserProfileByPostAPIView.as_view(), name='profile_by_post')
+    path('user/profile_by_post/<int:post_id>/', UserProfileByPostAPIView.as_view(), name='profile_by_post'),
+
+    path('delete_user/<int:user_id>/', DeleteUserView.as_view(), name='admin_delete_user'),
+
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='docs'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
