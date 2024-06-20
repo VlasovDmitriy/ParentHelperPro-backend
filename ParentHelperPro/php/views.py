@@ -1,9 +1,9 @@
-from django.core.mail import send_mail
+
 from rest_framework import generics, status, permissions
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 
 import jwt
 from django.conf import settings
@@ -70,6 +70,19 @@ class PostAPIView(APIView):
             serializer.save()
             return Response({"post": serializer.data})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, *args, **kwargs):
+        pk = kwargs.get("pk", None)
+        if not pk:
+            return Response({'error': "Method DELETE not allowed"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            post = Post.objects.get(pk=pk)
+        except Post.DoesNotExist:
+            return Response({'error': "Такого поста нет"}, status=status.HTTP_404_NOT_FOUND)
+
+        post.delete()
+        return Response({"message": "Пост успешно удалён"}, status=status.HTTP_200_OK)
 
 
 class DecodeTokenAPIView(APIView):
@@ -173,39 +186,6 @@ class UpdateUserInfoView(APIView):
             serializer.update(request.user, serializer.validated_data)
             return Response({"message": "Данные успешно обновлены"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class AdminDeleteUserView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def delete(self, request, user_id, *args, **kwargs):
-        try:
-            user = User.objects.get(id=user_id)
-            user_email = user.email
-            user_username = user.username
-            user.delete()
-
-
-
-            return Response({"message": "Пользователь успешно удален"}, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({"error": "Пользователь не найден"}, status=status.HTTP_404_NOT_FOUND)
-
-
-class AdminDeletePostView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def delete(self, request, post_id, *args, **kwargs):
-        try:
-            post = Post.objects.get(id=post_id)
-            post_title = post.title
-            user_email = post.user.email
-            post.delete()
-
-
-            return Response({"message": "Пост успешно удален"}, status=status.HTTP_200_OK)
-        except Post.DoesNotExist:
-            return Response({"error": "Пост не найден"}, status=status.HTTP_404_NOT_FOUND)
 
 
 
