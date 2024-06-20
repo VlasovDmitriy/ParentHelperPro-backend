@@ -11,7 +11,7 @@ from django.conf import settings
 from .filter import PostFilter
 from .models import User, Post, UserProfile
 from .serializers import PostSerializer, CustomUserCreateSerializer, UserProfileSerializer, \
-    PasswordResetRequestSerializer, UpdateUserInfoSerializer
+    PasswordResetRequestSerializer, UpdateUserInfoSerializer, UserProfileDetailSerializer
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -188,7 +188,32 @@ class UpdateUserInfoView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class UserProfileByPostAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request, post_id, *args, **kwargs):
+        try:
+            post = Post.objects.get(id=post_id)
+            user = post.user
+            user_profile = UserProfile.objects.get(user=user)
+
+            user_serializer = CustomUserCreateSerializer(user)
+            profile_serializer = UserProfileSerializer(user_profile, context={'request': request})
+            post_serializer = PostSerializer(user.posts.all(), many=True)
+
+            response_data = {
+                'user': user_serializer.data,
+                'avatar': profile_serializer.data['avatar'],
+                'posts': post_serializer.data,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Post.DoesNotExist:
+            return Response({'error': 'Пост не найден'}, status=status.HTTP_404_NOT_FOUND)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'Профиль пользователя не найден'}, status=status.HTTP_404_NOT_FOUND)
 
 
 

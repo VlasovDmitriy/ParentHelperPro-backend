@@ -164,3 +164,31 @@ class UpdateUserInfoSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+
+class UserPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ['id', 'title', 'content', 'tags']
+
+
+class UserProfileDetailSerializer(serializers.ModelSerializer):
+    posts = UserPostSerializer(many=True, read_only=True)
+    avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = ['user', 'avatar', 'posts']
+
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        avatar_url = obj.avatar.url
+        return request.build_absolute_uri(avatar_url)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        user = instance.user
+        representation['first_name'] = user.first_name
+        representation['last_name'] = user.last_name
+        representation['posts'] = UserPostSerializer(user.post_set.all(), many=True).data
+        return representation

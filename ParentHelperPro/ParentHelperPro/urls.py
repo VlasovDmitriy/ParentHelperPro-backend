@@ -5,7 +5,7 @@ from django.urls import path, include
 
 from ParentHelperPro import settings
 from php.views import UserAPIView, PostAPIView, RegisterAPIView, DecodeTokenAPIView, UserProfileView, \
-    UpdateAvatarAPIView, PostListFilterView, PasswordResetRequestView, UpdateUserInfoView
+    UpdateAvatarAPIView, PostListFilterView, PasswordResetRequestView, UpdateUserInfoView, UserProfileByPostAPIView
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -33,4 +33,5 @@ urlpatterns = [
 
     path('profile/update/', UpdateUserInfoView.as_view(), name='update-user'),
 
+    path('user/profile_by_post/<int:post_id>/', UserProfileByPostAPIView.as_view(), name='profile_by_post')
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
